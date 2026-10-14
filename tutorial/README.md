@@ -20,6 +20,47 @@
 - 緩衝日只有 10/25 和 11/15 兩天，落後的話優先用這兩天補。
 - 教學裡的程式碼都已經實際跑過；如果你跑出不一樣的結果，先看當天的「常見錯誤」。
 
+## 用 Jupyter 做的方式
+
+教學可以全部在 JupyterLab 完成（Day 1 第 7 步會設定好）。每段程式碼前面都有標註：
+
+| 標註 | 怎麼做 |
+| --- | --- |
+| `%%writefile 檔名` | 新的一格，第一行寫 `%%writefile 檔名`，下面貼程式碼，執行後存成檔案（會覆蓋） |
+| `%%writefile -a 檔名` | 同上，但是**加到檔案最後面**；第二行留空，跟前面的程式隔開 |
+| 打開檔案修改 | 程式碼要插進檔案中間時，在 JupyterLab 左側雙擊打開 `.py` 檔直接改，`Cmd + S` 存檔 |
+| 直接貼在格子執行 | 探索、測試用的程式碼，不用存成檔案 |
+| 前面加 `!` | 終端機指令也能在格子裡跑，例如 `!python scripts/update_data.py`、`!git add .` |
+| **一定要在終端機執行** | 在 JupyterLab 用 **File → New → Terminal** 開終端機執行 |
+
+**一定要在終端機執行的事情**只有這幾種：
+
+| 指令 | 原因 |
+| --- | --- |
+| `python3 -m venv`、`source .venv/bin/activate` | 建立、啟用虛擬環境 |
+| `jupyter lab` | 要從啟用 `.venv` 的終端機啟動，`!pip`、`!python` 才會用專案的環境 |
+| `streamlit run app.py` | 網站會一直執行，用 `!` 跑會讓 notebook 卡住 |
+| `git push`（第一次） | 可能要輸入帳號和 token，`!` 沒辦法輸入 |
+| `hf auth login` | 要貼上 token |
+
+**每天的開始方式**：
+
+```bash
+cd ~/Desktop/線上課程教材/pythan基礎觀念/爬蟲/好球帶研究室
+source .venv/bin/activate
+jupyter lab
+```
+
+在 `notebooks/` 新增當天的筆記本（例如 `D03.ipynb`），Kernel 選「好球帶研究室 (.venv)」，第一格放每日開場程式碼：
+
+```python
+%cd ~/Desktop/線上課程教材/pythan基礎觀念/爬蟲/好球帶研究室
+%load_ext autoreload
+%autoreload 2
+```
+
+`%autoreload 2` 讓你改了 `src/` 的 `.py` 檔之後，不用重啟 kernel 就能用新版本。在終端機跑 `streamlit run app.py` 的同時，可以繼續在筆記本裡測試函式。
+
 ## 時程表
 
 | 日期 | Day | 主題 | 檔案 |
@@ -100,6 +141,7 @@
 ├── content/stats.json          數據學院的文字內容
 ├── reports/stability_report.md 穩定性實驗報告
 ├── logs/stability_log.csv      每次上線前檢查的紀錄
+├── notebooks/                  每天的 Jupyter 筆記本
 ├── data/raw/                   爬下來的原始資料（不上傳）
 ├── data/clean/                 整理好的資料（網站讀這裡）
 ├── .streamlit/config.toml      主題色

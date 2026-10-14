@@ -2,6 +2,15 @@
 
 > 預計時間：2 小時　｜　階段：收尾
 
+## Jupyter 版做法
+
+- 筆記本：`notebooks/D33.ipynb`，第一格放每日開場程式碼（見 [README](README.md#用-jupyter-做的方式)）。
+- 新檔案或整個換掉（`%%writefile`）：`reports/stability_report.md`
+- 要打開檔案修改中間：`README.md`
+- **一定要在終端機執行**：
+  - 第 6 步「打上版本標籤」的 `git push --tags`：第一次推送可能要輸入帳號和 token，`!` 沒辦法輸入
+- 結束時在格子執行 `!git add .` 和 `!git commit -m "Day 33: 實驗報告與 README"`。
+
 ## 今天的目標
 
 - 把五組實驗整理成一份**穩定性實驗報告**（企劃書 4-4 要求的產出）
@@ -19,6 +28,8 @@
 ### 1. 穩定性實驗報告
 
 新增 `reports/stability_report.md`，用 `python scripts/run_experiments.py` 最新的結果和你這週在 `my_notes.md` 的紀錄來填。建議結構：
+
+> **Jupyter**：新的一格，第一行寫 `%%writefile reports/stability_report.md`，下面貼這段，執行後就會存成檔案（會覆蓋同名檔案）。
 
 ```markdown
 # 好球帶研究室：模型穩定性實驗報告
@@ -54,6 +65,8 @@
 
 ### 2. 清理
 
+> **Jupyter**：可以在格子裡執行，每一行指令前面加 `!`（例如 `!python scripts/update_data.py`）。
+
 ```bash
 rm -f explore*.py
 git status
@@ -86,6 +99,8 @@ git status
 
 <details>
 <summary>參考範例</summary>
+
+> **Jupyter**：這段要插進 `README.md` 的中間，不能用 `%%writefile`。在 JupyterLab 左側檔案列表雙擊打開 `README.md`，貼到指定位置，按 `Cmd + S` 存檔。（保留最上面的 `---` 設定區塊，下面換成你的說明）
 
 ```markdown
 # 好球帶研究室
@@ -136,6 +151,8 @@ git status
 
 ### 5. 最後檢查 `requirements.txt`
 
+> **Jupyter**：可以在格子裡執行，每一行指令前面加 `!`（例如 `!python scripts/update_data.py`）。
+
 ```bash
 pip freeze | grep -i -E "streamlit|pandas|numpy|plotly|requests"
 ```
@@ -143,6 +160,8 @@ pip freeze | grep -i -E "streamlit|pandas|numpy|plotly|requests"
 確認版本跟 `requirements.txt` 寫的一樣。
 
 ### 6. 打上版本標籤
+
+> **一定要在終端機執行**：第一次推送可能要輸入帳號和 token，`!` 沒辦法輸入。在 JupyterLab 用 **File → New → Terminal** 開一個終端機執行。
 
 ```bash
 python -m pytest -q

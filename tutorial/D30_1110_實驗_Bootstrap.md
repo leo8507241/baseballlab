@@ -2,6 +2,15 @@
 
 > 預計時間：2 小時　｜　階段：上線後實驗
 
+## Jupyter 版做法
+
+- 筆記本：`notebooks/D30.ipynb`，第一格放每日開場程式碼（見 [README](README.md#用-jupyter-做的方式)）。
+- 加到檔案最後面（`%%writefile -a`）：`src/stability.py`、`src/rules.py`、`src/data.py`
+- 要打開檔案修改中間：`pages/predict.py`
+- **一定要在終端機執行**：
+  - 第 5 步「確認」的 `streamlit run app.py`：網站會一直執行，用 `!` 跑會讓 notebook 卡住
+- 結束時在格子執行 `!git add .` 和 `!git commit -m "Day 30: 實驗 3 Bootstrap"`。
+
 ## 今天的目標
 
 - 學會 Bootstrap：從手上的資料「有放回地重抽」，模擬「如果球季重打一次」
@@ -20,6 +29,8 @@
 ### 1. 奪冠機率的區間
 
 在 `src/stability.py` 加入：
+
+> **Jupyter**：新的一格，第一行寫 `%%writefile -a src/stability.py`（`-a` 是加到檔案最後面，不會覆蓋），第二行留空，再貼這段。
 
 ```python
 # ---------- 實驗 3：資料重抽（Bootstrap） ----------
@@ -44,6 +55,8 @@ def exp_bootstrap_series(teams, games, n_boot=200, seed=0):
 - `rng.integers(0, len(games), len(games))`：抽 360 個 0–359 的隨機數字（可以重複），用它們挑出比賽。
 - 每次重抽只模擬 2,000 次，因為要做 200 次，總共 40 萬次模擬；實驗 1 已經證明模擬次數不是主要的誤差來源。
 
+> **Jupyter**：把雙引號裡面的程式碼貼在新的一格執行就好，不用 `python -c`。
+
 ```bash
 python -c "
 import pandas as pd
@@ -60,6 +73,8 @@ print(b.quantile([0.025, 0.5, 0.975]).round(3))
 ### 2. 弱點規則的可靠度
 
 預測頁說「鋼龍對右打明顯較弱」，這是根據他整季面對的幾百個打席。如果換一批類似的打席，這個結論還成立嗎？
+
+> **Jupyter**：新的一格，第一行寫 `%%writefile -a src/stability.py`（`-a` 是加到檔案最後面，不會覆蓋），第二行留空，再貼這段。
 
 ```python
 def exp_bootstrap_rules(pa, scale, sp, lineup, lg, n_boot=200, seed=0):
@@ -87,6 +102,8 @@ def exp_bootstrap_rules(pa, scale, sp, lineup, lg, n_boot=200, seed=0):
 
 測試兩隊王牌：
 
+> **Jupyter**：把雙引號裡面的程式碼貼在新的一格執行就好，不用 `python -c`。
+
 ```bash
 python -c "
 import pandas as pd
@@ -105,6 +122,8 @@ for abbr, opp in [('象', '龍'), ('龍', '象')]:
 
 ### 3. 每位先發都算一次，存起來
 
+> **Jupyter**：新的一格，第一行寫 `%%writefile -a src/stability.py`（`-a` 是加到檔案最後面，不會覆蓋），第二行留空，再貼這段。
+
 ```python
 def rule_stability_table(pa, scale, teams, batters, pitchers, lg, n_boot=200):
     """台灣大賽兩隊每位先發的每條弱點規則，在重抽中成立的比例。存起來給預測頁過濾用。"""
@@ -121,6 +140,8 @@ def rule_stability_table(pa, scale, teams, batters, pitchers, lg, n_boot=200):
 ```
 
 這張表明天會由 `run_experiments.py` 自動產生並存成 `data/clean/rule_stability.csv`。今天先手動跑一次：
+
+> **Jupyter**：把雙引號裡面的程式碼貼在新的一格執行就好，不用 `python -c`。
 
 ```bash
 python -c "
@@ -146,11 +167,12 @@ st.rule_stability_table(pa, const['woba_scale'], teams, batters, pitchers, lg).t
 
 `src/rules.py`：
 
+> **Jupyter**：新的一格，第一行寫 `%%writefile -a src/rules.py`（`-a` 是加到檔案最後面，不會覆蓋），第二行留空，再貼這段。
+
 ```python
 # 規則名稱 → 這條規則用到的拆分數據欄位
 RULE_COLUMNS = {"對左打明顯較弱": ["wOBA_vsL", "wOBA_vsR"], "對右打明顯較弱": ["wOBA_vsL", "wOBA_vsR"],
                 "第三輪打線開始被看穿": ["wOBA_round3"]}
-
 
 def stable_pitcher(sp, opp_lineup, lg, stab, threshold=0.8):
     """
@@ -173,6 +195,8 @@ def stable_pitcher(sp, opp_lineup, lg, stab, threshold=0.8):
 
 `src/data.py`：
 
+> **Jupyter**：新的一格，第一行寫 `%%writefile -a src/data.py`（`-a` 是加到檔案最後面，不會覆蓋），第二行留空，再貼這段。
+
 ```python
 @st.cache_data
 def load_rule_stability():
@@ -182,6 +206,8 @@ def load_rule_stability():
 ```
 
 `pages/predict.py` 的弱點分析整段換成（記得在 import 加上 `load_rule_stability`）：
+
+> **Jupyter**：這段要插進 `pages/predict.py` 的中間，不能用 `%%writefile`。在 JupyterLab 左側檔案列表雙擊打開 `pages/predict.py`，貼到指定位置，按 `Cmd + S` 存檔。（把原本「弱點分析與應對策略」整段換掉，最上面的 import 也要加上 `load_rule_stability`）
 
 ```python
 st.header("弱點分析與應對策略")
@@ -209,6 +235,8 @@ for title, fa, fb in [
 </details>
 
 ### 5. 確認
+
+> **一定要在終端機執行**：網站會一直執行，用 `!` 跑會讓 notebook 卡住。在 JupyterLab 用 **File → New → Terminal** 開一個終端機執行。
 
 ```bash
 streamlit run app.py

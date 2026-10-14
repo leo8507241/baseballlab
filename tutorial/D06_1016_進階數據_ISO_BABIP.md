@@ -2,6 +2,13 @@
 
 > 預計時間：2 小時　｜　階段：資料基礎
 
+## Jupyter 版做法
+
+- 筆記本：`notebooks/D06.ipynb`，第一格放每日開場程式碼（見 [README](README.md#用-jupyter-做的方式)）。
+- 新檔案或整個換掉（`%%writefile`）：`src/metrics.py`
+- **一定要在終端機執行**：今天沒有，全部都可以在 Jupyter 完成。
+- 結束時在格子執行 `!git add .` 和 `!git commit -m "Day 6: ISO、BABIP、畢氏勝率"`。
+
 ## 今天的目標
 
 - 建立 `src/metrics.py`，把進階數據公式寫成函式
@@ -30,6 +37,8 @@
 
 ### 2. 建立 `src/metrics.py`
 
+> **Jupyter**：新的一格，第一行寫 `%%writefile src/metrics.py`，下面貼這段，執行後就會存成檔案（會覆蓋同名檔案）。
+
 ```python
 """進階數據公式。每個函式都可以吃單一數字，也可以吃 pandas 的整欄。"""
 
@@ -49,6 +58,8 @@ def pythag(rs, ra, exp=1.83):
 ### 3. 驗證 ISO 和 BABIP
 
 新增 `explore_metrics.py`：
+
+> **Jupyter**：直接貼在新的一格執行。
 
 ```python
 from src import fetch, metrics
@@ -75,6 +86,8 @@ print("BABIP 最大差異：", (q["BABIP_calc"] - q["BABIP"]).abs().max())
 
 <details>
 <summary>參考解答</summary>
+
+> **Jupyter**：直接貼在新的一格執行。
 
 ```python
 games = fetch.fetch_games()

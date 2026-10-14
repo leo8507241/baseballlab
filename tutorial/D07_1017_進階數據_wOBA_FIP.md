@@ -2,6 +2,14 @@
 
 > 預計時間：2 小時　｜　階段：資料基礎
 
+## Jupyter 版做法
+
+- 筆記本：`notebooks/D07.ipynb`，第一格放每日開場程式碼（見 [README](README.md#用-jupyter-做的方式)）。
+- 新檔案或整個換掉（`%%writefile`）：`src/clean.py`
+- 加到檔案最後面（`%%writefile -a`）：`src/metrics.py`
+- **一定要在終端機執行**：今天沒有，全部都可以在 Jupyter 完成。
+- 結束時在格子執行 `!git add .` 和 `!git commit -m "Day 7: wOBA、FIP 與資料清理"`。
+
 ## 今天的目標
 
 - 算出 wOBA，並學會用「倍數」讓它跟上壘率同一個尺度
@@ -28,6 +36,8 @@ wOBA 先依每種打擊結果的價值加權：
 但這樣算出來的數字整體會偏低。慣例是再乘上一個**倍數**，讓「全聯盟的 wOBA」等於「全聯盟的上壘率」，這樣讀者可以用熟悉的上壘率標準來理解（.320 是平均、.400 很強）。
 
 在 `src/metrics.py` 最上面加入權重，並新增兩個函式：
+
+> **Jupyter**：新的一格，第一行寫 `%%writefile -a src/metrics.py`（`-a` 是加到檔案最後面，不會覆蓋），第二行留空，再貼這段。（權重放在檔案最後面也沒關係，函式執行時才會用到它）
 
 ```python
 # wOBA 權重：大聯盟常用的近似值。中職沒有官方公布，所以算出來會跟野球革命略有差異。
@@ -58,6 +68,8 @@ FIP = (13×全壘打 + 3×保送 − 2×三振) ÷ 局數 + 常數
 
 常數的作用跟 wOBA 的倍數一樣：讓「全聯盟的 FIP」等於「全聯盟的防禦率」。加到 `src/metrics.py`：
 
+> **Jupyter**：新的一格，第一行寫 `%%writefile -a src/metrics.py`（`-a` 是加到檔案最後面，不會覆蓋），第二行留空，再貼這段。
+
 ```python
 def fip_constant(lg_er, lg_ip, lg_hr, lg_bb, lg_so):
     """讓「聯盟 FIP 平均」等於「聯盟 ERA 平均」的常數。"""
@@ -70,6 +82,8 @@ def fip(HR, BB, SO, IP, const):
 ```
 
 ### 3. 建立 `src/clean.py`
+
+> **Jupyter**：新的一格，第一行寫 `%%writefile src/clean.py`，下面貼這段，執行後就會存成檔案（會覆蓋同名檔案）。
 
 ```python
 """把 data/raw 的原始資料整理成網站要用的乾淨表格，存到 data/clean。"""
@@ -151,6 +165,8 @@ if __name__ == "__main__":
 
 ### 4. 執行與驗證
 
+> **Jupyter**：可以在格子裡執行，每一行指令前面加 `!`（例如 `!python scripts/update_data.py`）。
+
 ```bash
 python -m src.clean
 ```
@@ -173,6 +189,8 @@ python -m src.clean
 
 <details>
 <summary>參考解答</summary>
+
+> **Jupyter**：直接貼在新的一格執行。
 
 ```python
 import pandas as pd
