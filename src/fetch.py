@@ -1,0 +1,53 @@
+
+import requests
+import json
+from bs4 import BeautifulSoup
+import time
+import pandas as pd
+from pathlib import Path
+
+SEASON='CPBL-2026-oB'
+def get_json(path, retries=3, pause=1.0):
+    for attempt in range(1,retries+1):
+        try:
+            session=requests.Session()
+            ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
+
+            res=session.get(path,headers={'User-agent':ua})
+            res.status_code
+            time.sleep(pause)
+            return res.json()
+        except (requests.RequestException, ValueError) as e:
+            print(f'第{attempt}次失敗 {path} 原因：{e}')
+            time.sleep(pause* attempt * 2)
+    raise RuntimeError(f'抓不到資料{path}')
+
+
+def cath_json(path, catch_name, refresh=True):
+    path_way=Path(__file__).resolve().parent.parent/"data"/"raw"
+    cath=path_way/ catch_name
+    cath.parent.mkdir(parents=True,exist_ok=True)
+    if cath.exists() and not refresh:
+        return json.loads(cath.read_text(encoding="utf-8"))
+    data=get_json(path)
+    cath.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    return data
+
+def team_info(season=SEASON,refresh=True):
+    data=cath_json(f'https://www.rebas.tw/api/seasons/{season}/leaders?type=team&section=standard&pa=undefined',f'{season}_team.json',refresh=False)['data']
+    row=[]
+    for i in data:
+        o=i['team']
+        row.append({
+            "team_id": o["uniqid"], "team": o["name"], "abbr": o["abbr"],
+                     "color": o["hex_color"].split(";")[0]
+        })
+    return pd.DataFrame(row)
+def team_standing(season=SEASON,refresh=True):
+    data=cath_json(f'https://www.rebas.tw/api/seasons/{season}/leaders?type=team&section=standard&pa=undefined',f'{season}_standing.json',refresh=False)['data']
+    row=[]
+    for i in data:
+        row.append({"rank": i["order"], "team": i["team"]["name"], "abbr": i["team"]["abbr"],
+                     "W": i["wins"], "L": i["loses"], "T": i["draws"], "PCT": i["PCT"],
+                     "GB": i["GB"], "DIFF": i["DIFF"]})
+    return pd.DataFrame(row).set_index('rank')
