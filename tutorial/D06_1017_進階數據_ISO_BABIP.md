@@ -1,4 +1,4 @@
-# Day 6｜10/16（五）｜進階數據①：ISO、BABIP、畢氏勝率
+# Day 6｜10/17（六）｜進階數據①：ISO、BABIP、畢氏勝率
 
 > 預計時間：2 小時　｜　階段：資料基礎
 
@@ -95,7 +95,7 @@ home = games.groupby("home").agg(RS=("home_runs", "sum"), RA=("away_runs", "sum"
 away = games.groupby("away").agg(RS=("away_runs", "sum"), RA=("home_runs", "sum"))
 runs = home.add(away, fill_value=0)
 
-standings = fetch.fetch_standings().set_index("team")
+standings = fetch.team_standing().set_index("team")
 runs["PCT"] = standings["PCT"]
 runs["pythag"] = metrics.pythag(runs["RS"], runs["RA"])
 runs["luck"] = runs["PCT"] - runs["pythag"]

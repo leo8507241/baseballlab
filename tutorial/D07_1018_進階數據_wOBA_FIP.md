@@ -1,4 +1,4 @@
-# Day 7｜10/17（六）｜進階數據②：wOBA、FIP 與資料清理
+# Day 7｜10/18（日）｜進階數據②：wOBA、FIP 與資料清理
 
 > 預計時間：2 小時　｜　階段：資料基礎
 
@@ -96,8 +96,8 @@ from src import cpbl, fetch, metrics
 CLEAN_DIR = Path(__file__).resolve().parent.parent / "data" / "clean"
 
 def build_teams():
-    teams = fetch.fetch_teams()
-    standings = fetch.fetch_standings()
+    teams = fetch.team_info()
+    standings = fetch.team_standing().reset_index()   # 把 rank 從索引變回一般欄位
     games = fetch.fetch_games()
 
     # 每隊得分、失分：主場和客場分開算再加起來
@@ -157,6 +157,7 @@ if __name__ == "__main__":
 
 幾個細節：
 
+- `team_standing().reset_index()`：你的 `team_standing` 把 `rank` 當索引，`reset_index()` 把它變回一般欄位，後面才能用 `sort_values("rank")` 排序。
 - `b.sum(numeric_only=True)`：把全聯盟打者的數字欄位加總成一列，就是「聯盟總和」，丟給 `woba_scale`。
 - `role`：先發場次超過出賽數一半的投手算先發，其他算後援。預測模型要分開算先發和牛棚。
 - `league_constants.csv`：把倍數和常數存起來，之後數據學院的計算機要用。
