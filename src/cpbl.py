@@ -1,180 +1,105 @@
-import requests
+from pathlib import Path
+
 import pandas as pd
+import requests
 from bs4 import BeautifulSoup
 
-half_codes={'上半季':'1','下半季':'2'}
+ua = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
+path_way = Path(__file__).resolve().parent.parent / "data" / "raw"
+half_codes = {'上半季': '1', '下半季': '2'}
+rebas_sections = {'上半季': 'top', '下半季': 'bottom'}
 
-def fetch_cpbl_standings(season_code,refresh=True):
-    path_way=Path(__file__).resolve().parent.parent/"data"/"raw"
-    ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
-    path=path_way/f'cpbl_standing_{season_code}.html'
+
+def fetch_cpbl_standings(season_code, refresh=False):
+    """中職官網：抓一個 SeasonCode 的戰績表 HTML（0 全年、1 上半季、2 下半季）。"""
+    path = path_way / f'cpbl_standing_{season_code}.html'
     if path.exists() and not refresh:
         return path.read_text(encoding="utf-8")
-    session=requests.Session()
-    page=session.get(
-        'https://www.cpbl.com.tw/standings/season',
+    session = requests.Session()
+    page = session.get('https://www.cpbl.com.tw/standings/season',
+                       headers={'User-agent': ua}, timeout=20)
+    soup = BeautifulSoup(page.text, 'html.parser')
+    token = soup.find('input', {'name': '__RequestVerificationToken'})['value']
+    res = session.post(
+        'https://www.cpbl.com.tw/standings/seasonaction',
         headers={
-            'User-agent':ua
+            'User-agent': ua,
+            'x-requested-with': 'XMLHttpRequest',
+            'referer': 'https://www.cpbl.com.tw/standings/season',
+        },
+        data={
+            '__RequestVerificationToken': token,
+            'ExecAction': '',
+            'IndexOfPages': '0',
+            'Kindcode': 'A',
+            'SeasonCode': season_code,
+            'GameEndDate': ''
         },
         timeout=20
     )
-    soup=BeautifulSoup(page.text,'html.parser')
-    cookie=soup.find('input',{'name':'__RequestVerificationToken'})
-    form_cookie=cookie.get('value','')
-    res=session.post(
-        'https://www.cpbl.com.tw/standings/seasonaction',
-        headers={
-            'User-agent':ua,
-            'content-type':'application/x-www-form-urlencoded; charset=UTF-8',
-            'x-requested-with':'XMLHttpRequest',
-            'origin':'https://www.cpbl.com.tw',
-            'referer':'https://www.cpbl.com.tw/standings/season',
-        },
-        data={
-            '__RequestVerificationToken':form_cookie,
-            'ExecAction':'',
-            'IndexOfPages':'0',
-            'Kindcode':'A',
-            'SeasonCode': season_code,
-            'GameEndDate':''
-        }
-    )
-    res.status_code()
-    path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_text(res.text,encoding="utf-8")
+    res.raise_for_status()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(res.text, encoding="utf-8")
     return res.text
 
-def cpbl_whole_half_standing(refresh=True):
-    ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
-    session=requests.Session()
-    page=session.get(
-        'https://www.cpbl.com.tw/standings/season',
-        headers={
-            'User-agent':ua
-        },
-        timeout=20
-    )
-    soup=BeautifulSoup(page.text,'html.parser')
-    cookie=soup.find('input',{'name':'__RequestVerificationToken'})
-    form_cookie=cookie.get('value','')
-    res=session.post(
-        'https://www.cpbl.com.tw/standings/seasonaction',
-        headers={
-            'User-agent':ua,
-            'content-type':'application/x-www-form-urlencoded; charset=UTF-8',
-            'x-requested-with':'XMLHttpRequest',
-            'origin':'https://www.cpbl.com.tw',
-            'referer':'https://www.cpbl.com.tw/standings/season',
-        },
-        data={
-            '__RequestVerificationToken':form_cookie,
-            'ExecAction':'',
-            'IndexOfPages':'0',
-            'Kindcode':'A',
-            'SeasonCode': '1',
-            'GameEndDate':''
-        }
-    )
-    res2=BeautifulSoup(res.text,'html.parser')
-    table=res2.select_one('table')
-    team_score_data_top=[]
-    for tr in table.select('tr'):
-        num_td=tr.select('td.num')
-        name_id=tr.select＿one('a')
-        if name_id and len(num_td)>=14:
-            team_name=name_id.text.strip()
-            win=num_td[1].text.strip().split('-')[0]
-            lose=num_td[1].text.strip().split('-')[1]
-            tie=num_td[1].text.strip().split('-')[2]
-            team_score_data_top.append({
-                'team_name':team_name,
-                '勝':win,
-                '敗':lose,
-                '平手':tie
-            })
-    df_team_score_top=pd.DataFrame(team_score_data_top).set_index('team_name')
 
-    session1=requests.Session()
-    page1=session1.get(
-        'https://www.cpbl.com.tw/standings/season',
-        headers={
-            'User-agent':ua
-        },
-        timeout=20
-    )
-    soup1=BeautifulSoup(page1.text,'html.parser')
-    cookie1=soup1.find('input',{'name':'__RequestVerificationToken'})
-    form_cookie1=cookie1.get('value','')
-    res1=session1.post(
-        'https://www.cpbl.com.tw/standings/seasonaction',
-        headers={
-            'User-agent':ua,
-            'content-type':'application/x-www-form-urlencoded; charset=UTF-8',
-            'x-requested-with':'XMLHttpRequest',
-            'origin':'https://www.cpbl.com.tw',
-            'referer':'https://www.cpbl.com.tw/standings/season',
-        },
-        data={
-            '__RequestVerificationToken':form_cookie,
-            'ExecAction':'',
-            'IndexOfPages':'0',
-            'Kindcode':'A',
-            'SeasonCode': '2',
-            'GameEndDate':''
-        }
-    )
-    res12=BeautifulSoup(res1.text,'html.parser')
-    table1=res12.select_one('table')
-    team_score_data_under=[]
-    for tr in table1.select('tr'):
-        num_td=tr.select('td.num')
-        name_id=tr.select＿one('a')
-        if name_id and len(num_td)>=14:
-            team_name=name_id.text.strip()
-            win=num_td[1].text.strip().split('-')[0]
-            lose=num_td[1].text.strip().split('-')[1]
-            tie=num_td[1].text.strip().split('-')[2]
-            team_score_data_under.append({
-                'team_name':team_name,
-                '勝':win,
-                '敗':lose,
-                '平手':tie
-            })
-    df_team_score_under=pd.DataFrame(team_score_data_under).set_index('team_name')
-    df_team_score_whole=pd.concat([df_team_score_top,df_team_score_under],ignore_index=False,axis=0,keys=['上半季','下半季'])
-    return df_team_score_whole
-import requests
-import json
-from bs4 import BeautifulSoup
+def parse_cpbl_standings(html, half):
+    """從 HTML 的第一張表拆出球隊和勝、敗、和。官網順序是「勝-和-敗」。"""
+    table = BeautifulSoup(html, 'html.parser').select_one('table')
+    rows = []
+    for tr in table.select('tr'):
+        num_td = tr.select('td.num')
+        name_id = tr.select_one('a')
+        if name_id and len(num_td) >= 14:
+            win, tie, lose = num_td[1].text.strip().split('-')
+            rows.append({'half': half, 'team': name_id.text.strip(),
+                         'W': int(win), 'L': int(lose), 'T': int(tie)})
+    return pd.DataFrame(rows)
+
+
+def cpbl_whole_half_standing(refresh=False):
+    """中職官網：上、下半季各抓一次，上下接成一張表。"""
+    frames = []
+    for half, code in half_codes.items():
+        frames.append(parse_cpbl_standings(fetch_cpbl_standings(code, refresh), half))
+    return pd.concat(frames, ignore_index=True)
+
 
 def rebas_cpbl_half_standing(section):
-    session=requests.Session()
-    ua='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36'
-    page=session.get(
+    """野球革命：一個半季的戰績（section：top 上半季、bottom 下半季）。"""
+    page = requests.get(
         f'https://www.rebas.tw/api/seasons/CPBL-2026-oB/leaders?type=team&section={section}&pa=undefined',
-        headers={
-            'User-agent':ua
-        }
-    )
-    page.status_code
-    data=page.json()['data']
-    row=[]
-    for i in data:
-        team_name=i['team']['name']
-        total_game=i['total']
-        total_win=i['wins']
-        total_lose=i['loses']
-        total_draw=i['draws']
-        win_pct=i['PCT']
-        diff=i['DIFF']
-        row.append({
-            '球隊':team_name,
-            '場數':total_game,
-            '勝':total_win,
-            '敗':total_lose,
-            '平手':total_draw,
-            '勝率':win_pct,
-            '得失分差':diff
-        })
-    df_standing=pd.DataFrame(row).set_index('球隊')
-    return df_standing
+        headers={'User-agent': ua}, timeout=20)
+    page.raise_for_status()
+    rows = []
+    for i in page.json()['data']:
+        rows.append({'team': i['team']['name'], 'W': i['wins'], 'L': i['loses'], 'T': i['draws']})
+    return pd.DataFrame(rows)
+
+
+def rebas_whole_half_standing():
+    """Plan B：野球革命的上、下半季，格式跟官網版一樣。"""
+    frames = []
+    for half, section in rebas_sections.items():
+        frames.append(rebas_cpbl_half_standing(section).assign(half=half))
+    return pd.concat(frames, ignore_index=True)[['half', 'team', 'W', 'L', 'T']]
+
+
+def half_standings(refresh=False):
+    """先試中職官網，失敗才用野球革命。回傳（表格, 來源）。"""
+    try:
+        df = cpbl_whole_half_standing(refresh)
+        if len(df) == 12:
+            return df, '中職官網'
+        print(f'官網只解析到 {len(df)} 列，改用野球革命')
+    except (requests.RequestException, TypeError) as e:
+        print(f'中職官網抓不到（{e}），改用野球革命')
+    return rebas_whole_half_standing(), '野球革命（備案）'
+
+
+def cross_check(half, season):
+    """上半季 + 下半季 應該等於全年戰績；回傳對不上的球隊。"""
+    total = half.groupby('team')[['W', 'L', 'T']].sum()
+    full = season.set_index('team')[['W', 'L', 'T']]
+    diff = (total - full).abs().sum(axis=1)
+    return diff[diff > 0]
