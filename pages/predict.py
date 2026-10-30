@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import config, fetch, model, rules, ui
-from src.data import load
+from src.data import load, load_locked
 
 ui.setup('台灣大賽預測')
 teams, batters, pitchers, const, lg=load()
@@ -125,3 +125,10 @@ for title,fa,fb in [
         ui.bullet_card(A_name , fa(), A['color'])
     with c2:
         ui.bullet_card(B_name , fb(), B['color'])   
+
+locked=load_locked()
+if locked:
+    st.success(
+        f"預測已在 {locked['locked_at'][:16].replace('T', ' ')} 鎖定：{A_name} 奪冠機率 "
+               f"{locked['champion_prob'][A_name]:.0%}，最可能的比數 {locked['most_likely']}。"
+               f"答案在最後一天揭曉。")

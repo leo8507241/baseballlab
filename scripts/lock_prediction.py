@@ -1,0 +1,36 @@
+"""鎖定台灣大賽預測：在看到任何台灣大賽結果之前執行一次，存成 data/clean/prediction_locked.json。"""
+import datetime as dt
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+import pandas as pd
+
+from src import config, model
+
+OUT = ROOT / "data/clean/prediction_locked.json"
+if OUT.exists():
+    sys.exit("已經鎖定過了，不能覆蓋。真的要重做，請先手動刪掉 data/clean/prediction_locked.json")
+
+teams=pd.read_csv('data/clean/teams.csv').set_index('team')
+A, B =config.TS_TEAMS
+pa, pb=teams.loc[A,'pythag'] , teams.loc[B,'pythag']
+p_a , results , _=model.simulate_series(pa,pb,config.TS_HOME_PATTERN,config.TS_NEED,config.HOME_ADVANTAGE)
+
+order = ["4-0", "4-1", "4-2", "4-3", "3-4", "2-4", "1-4", "0-4"]
+locked={
+    "locked_at": dt .datetime.now().isoformat(timespec='seconds'),
+    "teams":[A,B],
+    "pythag":{A: round(pa,4), B: round(pb,4)},
+    "home_pattern":config.TS_HOME_PATTERN,
+    "home_advantage":config.HOME_ADVANTAGE,
+    "game_prob_A_home":round(model.game_prob(pa ,pb,True,config.HOME_ADVANTAGE),4),
+    "game_prob_A_away":round(model.game_prob(pa ,pb,False,config.HOME_ADVANTAGE),4),
+    "champion_prob":{A: p_a, B: round(1- p_a ,4) },
+    "result_dist":{ k: results.get(k,0)/10000 for k in order},
+    "most_likely": max(results, key=results.get),
+}
+OUT.write_text(json.dumps(locked, ensure_ascii=False, indent=2), encoding="utf-8")
+print(f"已鎖定：{A} 奪冠機率 {p_a:.1%}，最可能的比數 {locked['most_likely']}（{locked['locked_at']}）")

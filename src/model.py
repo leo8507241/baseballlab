@@ -7,7 +7,7 @@ def game_prob(pa,pb,a_is_home,hfa=0.023):
     p=log5(pa,pb)+(hfa if a_is_home else -hfa)
     return min(max(p,0.05),0.95)
 
-def simulate_series(pa,pb,home_pattern,n=10000,hfa=0.023,seed=2026,need=4):
+def simulate_series(pa, pb, home_pattern, need=4, hfa=0.023, n=10000, seed=2026):
     rng=np.random.default_rng(seed)
     prob=[game_prob(pa,pb,h,hfa) for h in home_pattern]
     a_title=0
@@ -56,3 +56,4 @@ def expected_runs(woba_vs_sp, woba_all, sp_fip, bullpen_fip, opp_der, ctx,
     return ctx["R_per_G"] * (sp_part + bp_part) * defense * park
 def win_prob_from_runs(ra, rb, exp=1.83):
     return metrics.pythag(ra, rb, exp)
+

@@ -24,3 +24,10 @@ def load():
 @st.cache_data
 def load_pa():
     return pd.read_csv(CLEAN / "pa.csv", dtype={"result": str}, keep_default_na=False)
+import json
+
+def load_locked():
+    """Day 18 鎖定的台灣大賽預測；還沒鎖定就回傳 None。"""
+    path=CLEAN/'prediction_locked.json'
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
