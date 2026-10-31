@@ -40,13 +40,21 @@ def build_pitchers(teams):
     c['FIP_calc']=metrics.fip(c['HR'], c['SO'], c['BB'], c['IPOut'], const)
     c=c.merge(teams[['team','abbr']],on='abbr',how='left')
     return c, const
+def build_previous(season='CPBL-2025-JO'):
+    b=fetch.fetch_player('batter',season)[["player_id", "PA", "wOBA", "BABIP", "Kp", "BBp"]]
+    p=fetch.fetch_player('pitcher',season)[["player_id", "IPOut", "ERA", "FIP", "Kp", "BBp"]]
+    return b.add_prefix('prev_').rename(columns={"prev_player_id": "player_id"}),\
+    p.add_prefix("prev_").rename(columns={"prev_player_id": "player_id"})
 
 
 def main():
     path.mkdir(parents=True,exist_ok=True)
     teams=build_teams()
+    prev_b, prev_p = build_previous()
     batters, scale=build_batters(teams)
     pitchers, const=build_pitchers(teams)
+    batters = batters.merge(prev_b, on="player_id", how="left")
+    pitchers = pitchers.merge(prev_p, on="player_id", how="left")
     teams.to_csv(path/'teams.csv',index=False)
     batters.to_csv(path/'batters.csv',index=False)
     pitchers.to_csv(path/'pitchers.csv',index=False)

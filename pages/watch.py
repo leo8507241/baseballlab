@@ -54,3 +54,39 @@ with c2:
     ui.kpi('實際勝率',ui.f3(T['PCT']))
     ui.kpi('畢氏勝率',ui.f3(T['pythag']))
     ui.kpi('實際 − 畢氏',ui.f3(luck),note=ui.chip("贏得比實力多" if luck > 0 else "贏得比實力少","hot" if luck > 0 else "cold"))
+
+st.header('本季話題球員')
+tb=batters[(batters['abbr']==abbr) & (batters['PA']>=150)]
+tpit=pitchers[(pitchers['abbr']==abbr) & (pitchers['IP']>=30)]
+tags=[]
+rise = tb[tb['prev_PA']>=100].assign(d=lambda d: d["wOBA"] - d["prev_wOBA"]).nlargest(1,'d')
+bubble = tb[tb['prev_PA']>=100].assign(d=lambda d: d["BABIP"] - d["prev_BABIP"]).nlargest(1,'d')   # ← 從下面移上來
+if len(rise) and rise.iloc[0]['d'] >= 0.030:
+    r = rise.iloc[0]
+    why = (f"三振率 {r['prev_Kp']:.1f}% → {r['Kp']:.1f}%，"
+           f"保送率 {r['prev_BBp']:.1f}% → {r['BBp']:.1f}%。")
+    if len(bubble) and bubble.iloc[0]["d"] >= 0.030 and bubble.iloc[0]["player_id"] == r["player_id"]:
+        why = "進步明顯，但 BABIP 也大幅上升，需要觀察能不能維持。"
+    tags.append(("good", "異軍突起", r["name"], f"wOBA {ui.f3(r['wOBA'])}（去年 {ui.f3(r['prev_wOBA'])}）", why))
+under=tpit.assign(d=tpit["ERA"] - tpit["FIP_calc"]).nlargest(1,'d')
+if len(under) and under.iloc[0]["d"] >= 0.5:
+    r = under.iloc[0]
+    tags.append(("cold", "被低估", r["name"], f"ERA {r['ERA']:.2f} ／ FIP {r['FIP_calc']:.2f}",
+                 "防禦率被守備或運氣拖累，實際投球內容比成績好。"))
+if len(bubble) and bubble.iloc[0]["d"] >= 0.030:
+    r = bubble.iloc[0]
+    tags.append(("hot", "泡沫警示", r["name"], f"BABIP {ui.f3(r['BABIP'])}（去年 {ui.f3(r['prev_BABIP'])}）",
+                 "打進場內的球落地比例明顯升高，打擊成績可能有運氣成分。"))
+down = tpit[tpit["prev_IPOut"] >= 90].assign(d=lambda d: d["Kp"] - d["prev_Kp"]).nsmallest(1, "d")
+if len(down) and down.iloc[0]["d"] <= -3:
+    r = down.iloc[0]
+    tags.append(("bad", "真的退步", r["name"], f"三振率 {r['Kp']:.1f}%（去年 {r['prev_Kp']:.1f}%）",
+                 "三振能力下滑不太受運氣影響，值得觀察球速或球種變化。"))
+cols = st.columns(2)
+for i, (tone, label, name, nums, why) in enumerate(tags):
+    with cols[i % 2]:
+        st.markdown(f'<div class="card">{ui.chip(label, tone)}<h4 style="margin:8px 0 2px">{name}</h4>'
+                    f'<div class="num" style="font-size:20px">{nums}</div>'
+                    f'<div class="kpi-label">{why}</div></div>', unsafe_allow_html=True)
+if not tags:
+    st.caption("這一隊沒有符合條件的話題球員。")
