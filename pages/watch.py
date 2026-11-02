@@ -90,3 +90,44 @@ for i, (tone, label, name, nums, why) in enumerate(tags):
                     f'<div class="kpi-label">{why}</div></div>', unsafe_allow_html=True)
 if not tags:
     st.caption("這一隊沒有符合條件的話題球員。")
+# ---------- Day 21：ERA vs FIP 散佈圖 ----------
+st.header("ERA 和 FIP 的落差")
+q = pitchers[pitchers["IP"] >= 40].reset_index(drop=True)
+mine = q["abbr"] == abbr
+fig = go.Figure()
+fig.add_scatter(x=q.loc[~mine, "FIP_calc"], y=q.loc[~mine, "ERA"], mode="markers", name="其他球隊",
+                marker=dict(color="#8C9BB0", opacity=0.35, size=8), text=q.loc[~mine, "name"],
+                customdata=q.index[~mine], hovertemplate="%{text}<br>FIP %{x:.2f} / ERA %{y:.2f}")
+fig.add_scatter(x=q.loc[mine, "FIP_calc"], y=q.loc[mine, "ERA"], mode="markers", name=team,
+                marker=dict(color=color, size=12, line=dict(color="white", width=1)), text=q.loc[mine, "name"],
+                customdata=q.index[mine], hovertemplate="%{text}<br>FIP %{x:.2f} / ERA %{y:.2f}")
+
+lo, hi = 1.5, max(q["ERA"].max(), q["FIP_calc"].max()) + 0.3
+fig.add_scatter(x=[lo, hi], y=[lo, hi], mode="lines", line=dict(dash="dash", color="#8C9BB0"),
+                showlegend=False, hoverinfo="skip")
+fig.add_annotation(x=lo + 0.3, y=hi - 0.3, text="ERA > FIP：運氣差、被低估", showarrow=False,
+                   font=dict(color="#4A86DE"), xanchor="left")
+fig.add_annotation(x=hi - 0.3, y=lo + 0.3, text="ERA < FIP：運氣好、小心回落", showarrow=False,
+                   font=dict(color="#E2483E"), xanchor="right")
+fig.update_layout(xaxis_title="FIP（越左越好）", yaxis_title="ERA", height=460,
+                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+event = st.plotly_chart(fig, width="stretch", on_select="rerun", selection_mode="points")
+
+picked = None
+if event and event.selection.points:
+    picked = q.loc[event.selection.points[0]["customdata"]]
+if picked is None:
+    picked = q[mine].sort_values("IP", ascending=False).iloc[0]
+st.write("目前選中：", picked["name"], picked["team"])
+with st.expander("打者版：BABIP 和 wOBA"):
+    qb = batters[batters["PA"] >= 200]
+    mb = qb["abbr"] == abbr
+    f2 = go.Figure()
+    f2.add_scatter(x=qb.loc[~mb, "BABIP"], y=qb.loc[~mb, "wOBA_calc"], mode="markers", name="其他球隊",
+                   marker=dict(color="#8C9BB0", opacity=0.35), text=qb.loc[~mb, "name"])
+    f2.add_scatter(x=qb.loc[mb, "BABIP"], y=qb.loc[mb, "wOBA_calc"], mode="markers", name=team,
+                   marker=dict(color=color, size=11), text=qb.loc[mb, "name"])
+    f2.add_vline(x=qb["BABIP"].mean(), line_dash="dot", annotation_text="聯盟平均 BABIP")
+    f2.update_layout(xaxis_title="BABIP", yaxis_title="wOBA", height=400,
+                     paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    st.plotly_chart(f2, width="stretch")
