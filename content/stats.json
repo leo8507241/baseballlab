@@ -1,0 +1,67 @@
+
+[
+ {
+  "key": "wOBA",
+  "level": "進階",
+  "group": "打擊",
+  "full": "加權上壘率 Weighted On-Base Average",
+  "one": "把保送、一安、二安、三安、全壘打依「對得分的實際貢獻」加權後算出的上壘率。",
+  "why": "打擊率把一壘安打和全壘打都算成 1 支安打，上壘率又把保送和全壘打看得一樣重。wOBA 依每種結果實際能換到多少分給權重，一個數字就能看出打者整體的進攻價值。",
+  "use": "比較打者整體攻擊力，找出打擊率普通但其實很會製造分數的人。",
+  "formula": "\\text{wOBA}=\\frac{0.69\\,\\text{uBB}+0.72\\,\\text{HBP}+0.89\\,\\text{1B}+1.27\\,\\text{2B}+1.62\\,\\text{3B}+2.10\\,\\text{HR}}{\\text{AB}+\\text{BB}-\\text{IBB}+\\text{SF}+\\text{HBP}}\\times\\text{倍數}",
+  "table": "batters",
+  "column": "wOBA_calc",
+  "min_col": "PA",
+  "min": 200,
+  "higher_better": true,
+  "fmt": "{:.3f}"
+ },
+ {
+  "key": "ISO",
+  "level": "入門",
+  "group": "打擊",
+  "full": "純長打率 Isolated Power",
+  "one": "長打率減掉打擊率，只留下「長打」的部分。",
+  "why": "長打率包含一壘安打，高打擊率的短打型打者長打率也可能不差。ISO 把一安拿掉，只看打者打出長打的能力。",
+  "use": "找出真正的長打者，或觀察打者是不是改變了打擊策略。",
+  "formula": "\\text{ISO}=\\text{SLG}-\\text{AVG}=\\frac{\\text{2B}+2\\times\\text{3B}+3\\times\\text{HR}}{\\text{AB}}",
+  "table": "batters",
+  "column": "ISO_calc",
+  "min_col": "PA",
+  "min": 200,
+  "higher_better": true,
+  "fmt": "{:.3f}"
+ },
+ {
+  "key": "BABIP",
+  "level": "進階",
+  "group": "打擊",
+  "full": "場內球安打率 Batting Average on Balls In Play",
+  "one": "只看打進場內（不含全壘打、三振）的球，有多少比例變成安打。",
+  "why": "球打進場內之後，落點有很大的運氣成分。如果一位打者的 BABIP 遠高於自己的生涯水準，通常代表運氣不錯，之後很可能回落。",
+  "use": "判斷一段時間的好成績（或壞成績）能不能持續。要跟球員自己的過去比，沒有絕對的好壞。",
+  "formula": "\\text{BABIP}=\\frac{\\text{H}-\\text{HR}}{\\text{AB}-\\text{SO}-\\text{HR}+\\text{SF}}",
+  "table": "batters",
+  "column": "BABIP_calc",
+  "min_col": "PA",
+  "min": 200,
+  "higher_better": true,
+  "fmt": "{:.3f}"
+ },
+ {
+  "key": "FIP",
+  "level": "進階",
+  "group": "投球",
+  "full": "投手獨立防禦率 Fielding Independent Pitching",
+  "one": "只用投手自己能控制的三件事（三振、保送、全壘打）估算出來的防禦率。",
+  "why": "防禦率會受到守備和運氣影響。FIP 排除這些因素，更能反映投手本身的能力，也比 ERA 更能預測未來表現。",
+  "use": "比較 ERA 和 FIP 的差距：ERA 遠高於 FIP，代表運氣差或被守備拖累。",
+  "formula": "\\text{FIP}=\\frac{13\\,\\text{HR}+3\\,\\text{BB}-2\\,\\text{SO}}{\\text{IP}}+\\text{常數}",
+  "table": "pitchers",
+  "column": "FIP_calc",
+  "min_col": "IP",
+  "min": 40,
+  "higher_better": false,
+  "fmt": "{:.2f}"
+ }
+]

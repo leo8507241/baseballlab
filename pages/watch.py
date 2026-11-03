@@ -113,12 +113,13 @@ fig.update_layout(xaxis_title="FIP（越左越好）", yaxis_title="ERA", height
                   paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
 event = st.plotly_chart(fig, width="stretch", on_select="rerun", selection_mode="points")
 
+
+
 picked = None
 if event and event.selection.points:
     picked = q.loc[event.selection.points[0]["customdata"]]
 if picked is None:
     picked = q[mine].sort_values("IP", ascending=False).iloc[0]
-st.write("目前選中：", picked["name"], picked["team"])
 with st.expander("打者版：BABIP 和 wOBA"):
     qb = batters[batters["PA"] >= 200]
     mb = qb["abbr"] == abbr
@@ -131,3 +132,38 @@ with st.expander("打者版：BABIP 和 wOBA"):
     f2.update_layout(xaxis_title="BABIP", yaxis_title="wOBA", height=400,
                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
     st.plotly_chart(f2, width="stretch")
+p=picked
+st.subheader(f'{p['name']}({p['team']})')
+c1, c2, c3=st.columns(3)
+c1.metric("ERA", f"{p['ERA']:.2f}")
+c2.metric("FIP", f"{p['FIP_calc']:.2f}")
+c3.metric("落差 ERA − FIP", f"{p['ERA'] - p['FIP_calc']:+.2f}")
+
+items = [("三振率", "Kp", True, "{:.1f}%"), ("保送率", "BBp", False, "{:.1f}%"),
+         ("被全壘打", "HR9", False, "{:.2f}"), ("滾地球率", "GBp", True, "{:.1f}%"),
+         ("FIP", "FIP_calc", False, "{:.2f}")]
+names, pcts, texts=[],[],[]
+for label,col,higher_better,fmt in items:
+    pct=(q[col]<p[col]).mean()*100
+    pcts.append(pct if higher_better else 100-pct)
+    names.append(label)
+    texts.append(f'{fmt.format(p[col])} (PR{pcts[-1]:.0f})')
+fig = go.Figure(go.Bar(x=pcts, y=names, orientation="h", text=texts, textposition="outside",
+                       marker=dict(color=pcts, colorscale=[[0, "#4A86DE"], [0.5, "#96A0AF"], [1, "#E2483E"]],
+                                   cmin=0, cmax=100)))
+fig.update_layout(title="聯盟百分位數（紅色越深越好）", xaxis=dict(range=[0, 120], showticklabels=False),
+                  yaxis=dict(autorange="reversed"), height=300, margin=dict(t=50),
+                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+st.plotly_chart(fig, width="stretch")
+pa = load_pa()
+mine_pa = pa[pa["pitcher_id"] == p["player_id"]].copy()
+mine_pa = mine_pa[~mine_pa["result"].isin(["IBB", "SH", "SH_E", ""])]
+mine_pa["w"] = mine_pa["result"].map(RESULT_WEIGHT).fillna(0) * const["woba_scale"]
+by_game = mine_pa.groupby("date")["w"].agg(["sum", "size"]).sort_index()
+roll = by_game["sum"].rolling(5, min_periods=3).sum() / by_game["size"].rolling(5, min_periods=3).sum()
+fig = go.Figure(go.Scatter(x=roll.index, y=roll, mode="lines", line=dict(color=color, width=3),
+                           fill="tozeroy", fillcolor="rgba(244,178,62,0.08)"))
+fig.add_hline(y=lg["wOBA"], line_dash="dot", annotation_text="聯盟平均")
+fig.update_layout(title="最近 5 場被 wOBA 走勢（越低越好）", height=280, margin=dict(t=50),
+                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+st.plotly_chart(fig, width="stretch")
