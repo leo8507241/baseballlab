@@ -31,3 +31,8 @@ def load_locked():
     path=CLEAN/'prediction_locked.json'
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
+@st.cache_data
+def load_half():
+    """中職官網的上下半季戰績（Day 25）；沒有檔案就回傳 None。"""
+    path = CLEAN / "half_standings.csv"
+    return pd.read_csv(path) if path.exists() else None
