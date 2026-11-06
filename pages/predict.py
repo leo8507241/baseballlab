@@ -31,6 +31,7 @@ fig=go.Figure(go.Bar(
 fig.update_layout(title=f"系列賽結果分布（左邊 {A_name} 勝、右邊 {B_name} 勝）",
                   yaxis_title="機率（%）", height=320, margin=dict(t=50, b=20),
                   paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+fig.update_yaxes(range=[0, max(results.values()) / 100 * 1.25])   # 上方留空間，最高那根的數字才不會被切掉
 st.plotly_chart(fig, width="stretch")
 with st.expander("這個機率怎麼來的？"):
     neutral = model.log5(A["pythag"], B["pythag"])
@@ -104,9 +105,9 @@ labels=[m[0] for m in metrics]
 share_a=[a/(a+b) if hi else b/(a+b) for _,a, b, hi in metrics ]
 fig = go.Figure()
 fig.add_bar(y=labels, x=[-s for s in share_a], orientation="h", name=A_name, marker_color=A["color"],
-            text=[f"{m[1]:.3f}" if m[1] < 1 else f"{m[1]:.2f}" for m in metrics], textposition="inside")
+            text=[f"{m[1]:.3f}" if m[1] < 1 else f"{m[1]:.2f}" for m in metrics], textposition="inside",insidetextfont=dict(color=ui.text_on(A["color"]))   # B 隊那條改成 B["color"])
 fig.add_bar(y=labels, x=[1 - s for s in share_a], orientation="h", name=B_name, marker_color=B["color"],
-            text=[f"{m[2]:.3f}" if m[2] < 1 else f"{m[2]:.2f}" for m in metrics], textposition="inside")
+            text=[f"{m[2]:.3f}" if m[2] < 1 else f"{m[2]:.2f}" for m in metrics], textposition="inside",insidetextfont=dict(color=ui.text_on(B["color"]))   # B 隊那條改成 B["color"])
 fig.update_layout(barmode="relative", title="戰力對比（長條越長代表這一項越佔優勢）", height=380,
                   xaxis=dict(showticklabels=False, range=[-0.7, 0.7]), yaxis=dict(autorange="reversed"),
                   paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", margin=dict(t=50))

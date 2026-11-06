@@ -7,6 +7,10 @@ COLORS = {"bg": "#0D1520", "surface": "#142030", "surface2": "#1B2A3D", "line": 
           "good": "#46B98C", "bad": "#E8654F", "cold": "#4A86DE", "hot": "#E2483E"}
 
 CSS = """
+@media (max-width: 640px) {
+  .kpi-value { font-size: 30px; }
+  .card { padding: 14px 16px; }
+}
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap');
 html, body, [class*="css"] { font-family: 'Noto Sans TC', sans-serif; }
@@ -44,3 +48,8 @@ def bullet_card(title, items, color):
 
 def f3(x):
     return f"{x:.3f}".lstrip("0") if x >= 0 else "-" + f"{-x:.3f}".lstrip("0")
+def text_on(hex_color):
+    """依背景色深淺決定文字用黑或白，淺色背景（例如兄弟的黃色）就用深色字。"""
+    h = hex_color.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return "#0D1520" if 0.299 * r + 0.587 * g + 0.114 * b > 150 else "#FFFFFF"
