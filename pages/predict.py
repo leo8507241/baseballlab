@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import config, fetch, model, rules, ui
-from src.data import load, load_locked
+from src.data import load, load_locked ,load_rule_stability
 
 ui.setup('台灣大賽預測')
 teams, batters, pitchers, const, lg=load()
@@ -105,31 +105,29 @@ labels=[m[0] for m in metrics]
 share_a=[a/(a+b) if hi else b/(a+b) for _,a, b, hi in metrics ]
 fig = go.Figure()
 fig.add_bar(y=labels, x=[-s for s in share_a], orientation="h", name=A_name, marker_color=A["color"],
-            text=[f"{m[1]:.3f}" if m[1] < 1 else f"{m[1]:.2f}" for m in metrics], textposition="inside",insidetextfont=dict(color=ui.text_on(A["color"]))   # B 隊那條改成 B["color"])
+            text=[f"{m[1]:.3f}" if m[1] < 1 else f"{m[1]:.2f}" for m in metrics], textposition="inside",insidetextfont=dict(color=ui.text_on(A["color"])))
 fig.add_bar(y=labels, x=[1 - s for s in share_a], orientation="h", name=B_name, marker_color=B["color"],
-            text=[f"{m[2]:.3f}" if m[2] < 1 else f"{m[2]:.2f}" for m in metrics], textposition="inside",insidetextfont=dict(color=ui.text_on(B["color"]))   # B 隊那條改成 B["color"])
+            text=[f"{m[2]:.3f}" if m[2] < 1 else f"{m[2]:.2f}" for m in metrics], textposition="inside",insidetextfont=dict(color=ui.text_on(B["color"])))
 fig.update_layout(barmode="relative", title="戰力對比（長條越長代表這一項越佔優勢）", height=380,
                   xaxis=dict(showticklabels=False, range=[-0.7, 0.7]), yaxis=dict(autorange="reversed"),
                   paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", margin=dict(t=50))
 st.plotly_chart(fig, width="stretch")
   
-st.header('弱點分析與應對策略')
-
-for title,fa,fb in [
-    ("投手弱點", lambda : rules.pitcher_weak(sp_a,lu_b,lg), lambda: rules.pitcher_weak(sp_b,lu_a,lg)),
-    ("打線弱點", lambda: rules.lineup_weak(lu_a,sp_b), lambda : rules.lineup_weak(lu_b,sp_a)),
-    ("應對策略" , lambda : rules.strategy(lu_a,bench_a, sp_a,sp_b, lg), lambda : rules.strategy(lu_b,bench_b, sp_b,sp_a, lg)),
+st.header("弱點分析與應對策略")
+stab = load_rule_stability()
+sa, hid_a = rules.stable_pitcher(sp_a, lu_b, lg, stab)   # 不穩定的拆分數據先清掉
+sb, hid_b = rules.stable_pitcher(sp_b, lu_a, lg, stab)
+note = lambda n: [f"<span style='color:#8C9BB0'>另有 {n} 項在重抽測試中不夠穩定，沒有列出。</span>"] if n else []
+for title, fa, fb in [
+    ("投手弱點", lambda: rules.pitcher_weak(sa, lu_b, lg) + note(hid_a),
+                 lambda: rules.pitcher_weak(sb, lu_a, lg) + note(hid_b)),
+    ("打線弱點", lambda: rules.lineup_weak(lu_a, sp_b), lambda: rules.lineup_weak(lu_b, sp_a)),
+    ("應對策略", lambda: rules.strategy(lu_a, bench_a, sa, sb, lg),
+                 lambda: rules.strategy(lu_b, bench_b, sb, sa, lg)),
 ]:
     st.subheader(title)
-    c1,c2=st.columns(2)
+    c1, c2 = st.columns(2)
     with c1:
-        ui.bullet_card(A_name , fa(), A['color'])
+        ui.bullet_card(A_name, fa(), A["color"])
     with c2:
-        ui.bullet_card(B_name , fb(), B['color'])   
-
-locked=load_locked()
-if locked:
-    st.success(
-        f"預測已在 {locked['locked_at'][:16].replace('T', ' ')} 鎖定：{A_name} 奪冠機率 "
-               f"{locked['champion_prob'][A_name]:.0%}，最可能的比數 {locked['most_likely']}。"
-               f"答案在最後一天揭曉。")
+        ui.bullet_card(B_name, fb(), B["color"])

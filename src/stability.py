@@ -50,3 +50,49 @@ def default_game_prob(teams, batters, pitchers, lg, sp_innings=6, a_home=True):
     rb = model.expected_runs(w(lb, sa), lb["wOBA_calc"].mean(), sa["FIP_calc"], tp.loc[aa, "bullpen_fip"],
                              tp.loc[aa, "DER"], ctx, sp_innings, not a_home)
     return model.win_prob_from_runs(ra, rb)
+# ---------- 實驗 3：資料重抽（Bootstrap） ----------
+def exp_bootstrap_series(teams, games, n_boot=200, seed=0):
+    """從例行賽 360 場比賽中「有放回地」重抽，重算得失分 → 畢氏勝率 → 奪冠機率。"""
+    rng = np.random.default_rng(seed)
+    a, b = config.TS_TEAMS
+    out = []
+    for _ in range(n_boot):
+        g = games.iloc[rng.integers(0, len(games), len(games))]
+        rs_ra = {}
+        for team in (a, b):
+            home, away = g[g["home"] == team], g[g["away"] == team]
+            rs_ra[team] = (home["home_runs"].sum() + away["away_runs"].sum(),
+                           home["away_runs"].sum() + away["home_runs"].sum())
+        pa, pb = pythag(*rs_ra[a]), pythag(*rs_ra[b])
+        out.append(model.simulate_series(pa, pb, config.TS_HOME_PATTERN, config.TS_NEED,
+                                         config.HOME_ADVANTAGE, n=2_000, seed=1)[0])
+    return pd.Series(out, name="奪冠機率")
+def exp_bootstrap_rules(pa, scale, sp, lineup, lg, n_boot=200, seed=0):
+    """重抽逐打席資料，重算這位先發的拆分數據，統計每條弱點規則有幾成的機率成立。"""
+    rng = np.random.default_rng(seed)
+    base = splits.prepare(pa, scale)
+    mine = base[base["pitcher_id"] == sp["player_id"]]
+    counts = {}
+    for _ in range(n_boot):
+        s = mine.iloc[rng.integers(0, len(mine), len(mine))]
+        p = sp.copy()
+        for hand in ("L", "R"):
+            sub = s[s["b_hand"] == hand]
+            p[f"PA_vs{hand}"], p[f"wOBA_vs{hand}"] = len(sub), sub["woba_val"].mean()
+        p["wOBA_round3"] = s.loc[s["pa_round"] == 3, "woba_val"].mean()
+        for sentence in rules.pitcher_weak(p, lineup, lg):
+            key = sentence.split("：")[0]          # 用冒號前的標題當作規則名稱
+            counts[key] = counts.get(key, 0) + 1
+    return pd.Series(counts).div(n_boot).sort_values(ascending=False).rename("成立比例")
+def rule_stability_table(pa, scale, teams, batters, pitchers, lg, n_boot=200):
+    """台灣大賽兩隊每位先發的每條弱點規則，在重抽中成立的比例。存起來給預測頁過濾用。"""
+    t = teams.set_index("team")
+    a, b = config.TS_TEAMS
+    rows = []
+    for team, opp in ((a, b), (b, a)):
+        abbr, opp_abbr = t.loc[team, "abbr"], t.loc[opp, "abbr"]
+        lineup = batters[batters["abbr"] == opp_abbr].nlargest(9, "PA")
+        for _, sp in pitchers[(pitchers["abbr"] == abbr) & (pitchers["role"] == "先發")].iterrows():
+            ratio = exp_bootstrap_rules(pa, scale, sp, lineup, lg, n_boot)
+            rows += [{"pitcher_id": sp["player_id"], "rule": k, "ratio": v} for k, v in ratio.items()]
+    return pd.DataFrame(rows)

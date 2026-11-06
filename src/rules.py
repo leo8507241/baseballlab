@@ -83,3 +83,24 @@ def strategy(team_lineup, bench, my_sp, opp_sp, lg):
     if not out:
         out.append("雙方沒有明顯的對位優勢，照正常戰術打。")
     return out
+# 規則名稱 → 這條規則用到的拆分數據欄位
+RULE_COLUMNS = {"對左打明顯較弱": ["wOBA_vsL", "wOBA_vsR"], "對右打明顯較弱": ["wOBA_vsL", "wOBA_vsR"],
+                "第三輪打線開始被看穿": ["wOBA_round3"]}
+
+def stable_pitcher(sp, opp_lineup, lg, stab, threshold=0.8):
+    """
+    Day 30：把「在 Bootstrap 重抽中成立不到 threshold」的弱點所用到的拆分數據清空，
+    之後的弱點分析和應對策略就都不會用到不穩定的結論。回傳（清理後的投手, 被隱藏幾項）。
+    """
+    if stab is None:
+        return sp, 0
+    ratio = stab[stab["pitcher_id"] == sp["player_id"]].set_index("rule")["ratio"]
+    sp = sp.copy()
+    hidden = 0
+    for sentence in pitcher_weak(sp, opp_lineup, lg):
+        rule = sentence.split("：")[0]
+        if rule in RULE_COLUMNS and ratio.get(rule, 1.0) < threshold:
+            for col in RULE_COLUMNS[rule]:
+                sp[col] = float("nan")
+            hidden += 1
+    return sp, hidden

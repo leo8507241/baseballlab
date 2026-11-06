@@ -36,3 +36,8 @@ def load_half():
     """中職官網的上下半季戰績（Day 25）；沒有檔案就回傳 None。"""
     path = CLEAN / "half_standings.csv"
     return pd.read_csv(path) if path.exists() else None
+@st.cache_data
+def load_rule_stability():
+    """每條弱點規則在重抽中成立的比例（Day 30）；還沒跑就回傳 None。"""
+    path = CLEAN / "rule_stability.csv"
+    return pd.read_csv(path) if path.exists() else None
