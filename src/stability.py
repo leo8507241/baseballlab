@@ -96,3 +96,18 @@ def rule_stability_table(pa, scale, teams, batters, pitchers, lg, n_boot=200):
             ratio = exp_bootstrap_rules(pa, scale, sp, lineup, lg, n_boot)
             rows += [{"pitcher_id": sp["player_id"], "rule": k, "ratio": v} for k, v in ratio.items()]
     return pd.DataFrame(rows)
+# ---------- 實驗 4：資料截止日 ----------
+def exp_cutoff(games, cutoffs=("2026-08-31", "2026-09-15", "2026-10-06")):
+    a, b = config.TS_TEAMS
+    rows = []
+    for cut in cutoffs:
+        g = games[games["date"] <= cut]
+        rs_ra = {}
+        for team in (a, b):
+            home, away = g[g["home"] == team], g[g["away"] == team]
+            rs_ra[team] = (home["home_runs"].sum() + away["away_runs"].sum(),
+                           home["away_runs"].sum() + away["home_runs"].sum())
+        pa, pb = pythag(*rs_ra[a]), pythag(*rs_ra[b])
+        p = model.simulate_series(pa, pb, config.TS_HOME_PATTERN, config.TS_NEED, config.HOME_ADVANTAGE)[0]
+        rows.append({"截止日": cut, "場數": len(g), f"{a} 畢氏勝率": pa, f"{b} 畢氏勝率": pb, "奪冠機率": p})
+    return pd.DataFrame(rows)

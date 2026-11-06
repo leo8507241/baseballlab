@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import config, fetch, model, rules, ui
-from src.data import load, load_locked ,load_rule_stability
+from src.data import load, load_locked ,load_rule_stability, load_stability
 
 ui.setup('台灣大賽預測')
 teams, batters, pitchers, const, lg=load()
@@ -17,8 +17,13 @@ st.markdown('<p class="eyebrow">系列賽預測 · 蒙地卡羅模擬 10,000 次
 
 c1,c2=st.columns(2)
 
+summary = load_stability()
+interval = ""
+if summary:                     # 上線後實驗 3 算出的不確定範圍
+    lo, hi = summary["exp3"]["奪冠機率95%區間"]
+    interval = ui.chip(f"95% 區間 {lo:.0%}–{hi:.0%}", "warn")
 with c1:
-    ui.kpi(f'{A_name}奪冠機率',f'{p_a:.0%}',f"畢氏勝率{ui.f3(A['pythag'])}")
+    ui.kpi(f"{A_name} 奪冠機率", f"{p_a:.0%}", f"畢氏勝率 {ui.f3(A['pythag'])}", interval)
 with c2:
     ui.kpi(f'{B_name}奪冠機率',f'{1-p_a:.0%}',f"畢氏勝率{ui.f3(B['pythag'])}")
 

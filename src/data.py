@@ -7,6 +7,9 @@ import streamlit as st
 
 CLEAN = Path(__file__).resolve().parent.parent / "data" / "clean"
 
+def load_raw():
+    """不經過 Streamlit 快取的版本，給 scripts/ 裡的程式用。"""
+    return load.__wrapped__()
 @st.cache_data
 def load():
     teams = pd.read_csv(CLEAN / "teams.csv")
@@ -41,3 +44,8 @@ def load_rule_stability():
     """每條弱點規則在重抽中成立的比例（Day 30）；還沒跑就回傳 None。"""
     path = CLEAN / "rule_stability.csv"
     return pd.read_csv(path) if path.exists() else None
+@st.cache_data
+def load_stability():
+    """上線後實驗的摘要（Day 31）；還沒跑實驗就回傳 None。"""
+    path = CLEAN / "stability_summary.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
