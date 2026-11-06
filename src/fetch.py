@@ -119,3 +119,10 @@ def fetch_pitcher_pa(player_id,season=SEASON,refresh=False):
         df.to_csv(file,index=False)
     # 野手兼投手（例如林子偉）的紀錄裡也有他當打者的打席，只留他當投手的
     return df[df['pitcher_id']==player_id]
+def find_season_id(year, keyword):
+    """在中職所有賽季中，找出標題含有 keyword（例如「台灣大賽」）的賽季代碼；找不到回傳 None。"""
+    seasons = get_json("https://www.rebas.tw/api/leagues/CPBL")["data"]["seasons"]
+    for s in seasons:
+        if s.get("year") == year and keyword in s.get("title", ""):
+            return s["uniqid"]
+    return None

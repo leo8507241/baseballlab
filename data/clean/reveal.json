@@ -1,0 +1,11 @@
+{
+  "season_id": "CPBL-2026-LU",
+  "actual_score": "4-2",
+  "actual_champion": "味全龍",
+  "predicted_champion": "味全龍",
+  "prob_of_actual_score": 0.2075,
+  "games": 6,
+  "hit_rate": 0.6666666666666666,
+  "home_wins_rate": 0.6666666666666666,
+  "brier": 0.22543129333333334
+}

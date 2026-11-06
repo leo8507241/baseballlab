@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import config, fetch, model, rules, ui
-from src.data import load, load_locked ,load_rule_stability, load_stability
+from src.data import load, load_locked ,load_rule_stability, load_stability, load_reveal
 
 ui.setup('台灣大賽預測')
 teams, batters, pitchers, const, lg=load()
@@ -136,3 +136,18 @@ for title, fa, fb in [
         ui.bullet_card(A_name, fa(), A["color"])
     with c2:
         ui.bullet_card(B_name, fb(), B["color"])
+
+reveal, reveal_games = load_reveal()
+if reveal:
+    st.header("揭曉：預測 vs 實際")
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        ui.kpi("實際結果", f"{reveal['actual_champion']} 奪冠", f"系列賽 {reveal['actual_score']}（{A_name} 的勝場在前）")
+    with c2:
+        ui.kpi("模型預測", f"{reveal['predicted_champion']} 奪冠",
+               f"鎖定時給實際比數的機率：{reveal['prob_of_actual_score']:.1%}")
+    with c3:
+        ui.kpi("單場命中率", f"{reveal['hit_rate']:.0%}",
+               f"{reveal['games']} 場；主場球隊勝率 {reveal['home_wins_rate']:.0%}")
+    st.dataframe(reveal_games[["場次", "日期", "主場", "比分", "模型看好", "實際勝方", "猜對"]],
+                 hide_index=True, width="stretch")

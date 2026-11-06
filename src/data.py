@@ -49,3 +49,10 @@ def load_stability():
     """上線後實驗的摘要（Day 31）；還沒跑實驗就回傳 None。"""
     path = CLEAN / "stability_summary.json"
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+@st.cache_data
+def load_reveal():
+    """最後一天揭曉的結果；還沒揭曉就回傳 (None, None)。"""
+    path = CLEAN / "reveal.json"
+    if not path.exists():
+        return None, None
+    return json.loads(path.read_text(encoding="utf-8")), pd.read_csv(CLEAN / "reveal_games.csv")
