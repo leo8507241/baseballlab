@@ -104,7 +104,7 @@
   "one": "每 100 個打席中有幾次保送。",
   "why": "保送代表打者有選球眼光、不亂揮。保送率比打擊率穩定，比較能反映真實能力。",
   "use": "判斷打者的選球能力；跟三振率一起看，可以看出打者的打擊策略。",
-  "formula": "\\text{BB\\%}=\\frac{\\text{BB}}{\\text{PA}}\\times 100",
+  "formula": "\\text{BB\\%}=\\frac{\\text{BB}-\\text{IBB}}{\\text{PA}}\\times 100",
   "table": "batters",
   "column": "BBp",
   "min_col": "PA",

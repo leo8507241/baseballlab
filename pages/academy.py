@@ -11,6 +11,13 @@ teams,batters,pitchers,const,lg=load()
 STATS=json.loads((Path(__file__).resolve().parent.parent/"content" / "stats.json").read_text(encoding='utf-8'))
 TABLES = {"batters": batters, "pitchers": pitchers}
 
+lg_obp = (batters["H"] + batters["BB"] + batters["HBP"]).sum() / (batters["AB"] + batters["BB"] + batters["HBP"] + batters["SF"]).sum()
+lg_slg = (batters["H"] + batters["2B"] + 2 * batters["3B"] + 3 * batters["HR"]).sum() / batters["AB"].sum()
+lg_era = pitchers["ER"].sum() * 9 / pitchers["IP"].sum()
+OBP = lambda v: (v["H"] + v["BB"] + v["HBP"]) / (v["AB"] + v["BB"] + v["HBP"] + v["SF"])
+SLG = lambda v: (v["H"] + v["2B"] + 2 * v["3B"] + 3 * v["HR"]) / v["AB"]
+HIT_FIELDS = [("AB", 480), ("H", 135), ("2B", 25), ("3B", 3), ("HR", 15), ("BB", 48), ("HBP", 5), ("SF", 4)]
+
 CALC = {
     "wOBA": ([("1B", 90), ("2B", 25), ("3B", 3), ("HR", 15), ("BB", 48), ("IBB", 3), ("HBP", 5), ("AB", 480), ("SF", 4)],
              lambda v: metrics.woba(v["HBP"], v["1B"] + v["2B"] + v["3B"] + v["HR"], v["2B"], v["3B"], v["HR"],
@@ -21,6 +28,17 @@ CALC = {
               lambda v: metrics.babip(v["H"], v["HR"], v["AB"], v["SO"], v["SF"])),
     "FIP": ([("IP", 150), ("HR", 12), ("BB", 40), ("SO", 130)],
             lambda v: metrics.fip(v["HR"], v["SO"], v["BB"], v["IP"] * 3, const["fip_const"])),
+    "OPS": (HIT_FIELDS, lambda v: OBP(v) + SLG(v)),
+    "OPS+": (HIT_FIELDS, lambda v: 100 * (OBP(v) / lg_obp + SLG(v) / lg_slg - 1)),
+    "BB%": ([("BB", 48), ("IBB", 3), ("PA", 540)], lambda v: (v["BB"] - v["IBB"]) / v["PA"] * 100),
+    "K%": ([("SO", 85), ("PA", 540)], lambda v: v["SO"] / v["PA"] * 100),
+    "ERA": ([("ER", 55), ("IP", 150)], lambda v: v["ER"] * 9 / v["IP"]),
+    "ERA+": ([("ER", 55), ("IP", 150)], lambda v: 100 * lg_era / (v["ER"] * 9 / v["IP"])),
+    "WHIP": ([("BB", 40), ("H", 140), ("IP", 150)], lambda v: (v["BB"] + v["H"]) / v["IP"]),
+    "投手 K%": ([("SO", 130), ("BF", 620)], lambda v: v["SO"] / v["BF"] * 100),
+    "HR/9": ([("HR", 12), ("IP", 150)], lambda v: v["HR"] * 9 / v["IP"]),
+    "LOB%": ([("H", 140), ("BB", 40), ("HBP", 5), ("R", 60), ("HR", 12)],
+             lambda v: (v["H"] + v["BB"] + v["HBP"] - v["R"]) / (v["H"] + v["BB"] + v["HBP"] - 1.4 * v["HR"]) * 100),
 }
 levels = ["入門", "進階", "高階"]
 nav , main=st.columns([1,4])
