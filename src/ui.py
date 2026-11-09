@@ -7,10 +7,6 @@ COLORS = {"bg": "#0D1520", "surface": "#142030", "surface2": "#1B2A3D", "line": 
           "good": "#46B98C", "bad": "#E8654F", "cold": "#4A86DE", "hot": "#E2483E"}
 
 CSS = """
-@media (max-width: 640px) {
-  .kpi-value { font-size: 30px; }
-  .card { padding: 14px 16px; }
-}
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Noto+Sans+TC:wght@400;700;900&display=swap');
 html, body, [class*="css"] { font-family: 'Noto Sans TC', sans-serif; }
@@ -26,6 +22,12 @@ h1, h2, h3 { font-weight: 900 !important; letter-spacing: .02em; }
 .chip.good { color: #46B98C; } .chip.bad { color: #E8654F; } .chip.warn { color: #F4B23E; }
 .chip.cold { color: #4A86DE; } .chip.hot { color: #E2483E; }
 .card ul { margin: 0; padding-left: 20px; } .card li { margin-bottom: 6px; }
+.insight { background: #142030; border-left: 3px solid #F4B23E; border-radius: 0 8px 8px 0;
+           padding: 10px 14px; margin: 2px 0 8px; font-size: 14px; line-height: 1.7; }
+@media (max-width: 640px) {
+  .kpi-value { font-size: 30px; }
+  .card { padding: 14px 16px; }
+}
 </style>
 """
 
@@ -53,3 +55,23 @@ def text_on(hex_color):
     h = hex_color.lstrip("#")
     r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
     return "#0D1520" if 0.299 * r + 0.587 * g + 0.114 * b > 150 else "#FFFFFF"
+
+def style_fig(fig, height=360, title=None):
+    """全站圖表共用的外觀：透明背景、字型、邊距。"""
+    fig.update_layout(height=height, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                      font=dict(family="Noto Sans TC, sans-serif", color=COLORS["fg"]),
+                      margin=dict(t=50, l=10, r=10, b=10))
+    fig.update_xaxes(automargin=True)
+    fig.update_yaxes(automargin=True)   # 邊距很小，靠 automargin 讓軸標籤不被切掉
+    if title:
+        fig.update_layout(title=title)
+    return fig
+
+def insight(text):
+    """圖表下方的白話解讀。"""
+    st.markdown(f'<div class="insight"><b>解讀</b>　{text}</div>', unsafe_allow_html=True)
+
+def glossary(text):
+    """頁面上方的名詞小抄，旁邊連到數據學院。"""
+    st.caption(text)
+    st.page_link("pages/academy.py", label="數據解釋的完整說明 →")

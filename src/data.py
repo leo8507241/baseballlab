@@ -56,3 +56,9 @@ def load_reveal():
     if not path.exists():
         return None, None
     return json.loads(path.read_text(encoding="utf-8")), pd.read_csv(CLEAN / "reveal_games.csv")
+
+@st.cache_data
+def load_span():
+    """逐打席資料涵蓋的期間，例如 3/28–10/6，顯示在圖表下方。"""
+    d = pd.to_datetime(pd.read_csv(CLEAN / "pa.csv", usecols=["date"])["date"])
+    return f"{d.min().month}/{d.min().day}–{d.max().month}/{d.max().day}"

@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import metrics, ui
-from src.data import load
+from src.data import load, load_span
 ui.setup('數據學院')
 teams,batters,pitchers,const,lg=load()
 STATS=json.loads((Path(__file__).resolve().parent.parent/"content" / "stats.json").read_text(encoding='utf-8'))
@@ -61,13 +61,14 @@ st.markdown(f"**中職實例**：今年最{'高' if s['higher_better'] else '低
 with st.expander("看公式"):
         st.latex(s["formula"])
 fig = go.Figure()
-fig.add_histogram(x=df[col], nbinsx=25, marker_color="#26384F", name="中職球員分布")
+fig.add_histogram(x=df[col], nbinsx=25, marker_color="#26384F", name="中職球員分布",
+                  hovertemplate="數值 %{x}：%{y} 人<extra></extra>")
 for qv, label in [(q25, "25 百分位"), (q50, "中位數"), (q75, "75 百分位")]:
     fig.add_vline(x=qv, line_dash="dot", line_color="#8C9BB0", annotation_text=label)
 if result is not None:
     fig.add_vline(x=result, line_color="#F4B23E", line_width=3,
                   annotation_text=f"你的計算 {fmt(result)}", annotation_font_color="#F4B23E")
-fig.update_layout(title=f"好壞標準：2026 中職分布（{s['min_col']} ≥ {s['min']}）", height=320,
-                  showlegend=False, margin=dict(t=50),
-                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+fig.update_layout(showlegend=False)
+ui.style_fig(fig, 320, f"好壞標準：2026 中職分布（{s['min_col']} ≥ {s['min']}）")
 st.plotly_chart(fig, width="stretch")
+st.caption(f"2026 例行賽（{load_span()}）｜{s['min_col']} {s['min']} 以上，共 {len(df)} 人")

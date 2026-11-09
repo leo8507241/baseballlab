@@ -4,10 +4,13 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src import config, fetch, model, rules, ui
-from src.data import load, load_locked ,load_rule_stability, load_stability, load_reveal
+from src.data import load, load_locked ,load_rule_stability, load_stability, load_reveal, load_span
 
 ui.setup('台灣大賽預測')
 teams, batters, pitchers, const, lg=load()
+span = load_span()
+ui.glossary("**wOBA** 打者整體攻擊力（越高越好）｜**FIP** 只看三振、保送、全壘打的投手表現（越低越好）｜"
+            "**ISO** 長打能力（越高越好）｜**DER** 守備把打進場內的球變成出局的比例（越高越好）")
 A_name , B_name=config.TS_TEAMS
 A=teams.set_index('team').loc[A_name]
 B=teams.set_index('team').loc[B_name]
@@ -32,12 +35,18 @@ order = ["4-0", "4-1", "4-2", "4-3", "3-4", "2-4", "1-4", "0-4"]
 fig=go.Figure(go.Bar(
     x=order , y=[results.get(k,0)/100 for k in order],
     marker_color=[A["color"]] * 4 + [B["color"]] * 4,
-    text=[f'{results.get(k,0)/100:.1f}%' for k in order],textposition="outside",cliponaxis=False))
-fig.update_layout(title=f"系列賽結果分布（左邊 {A_name} 勝、右邊 {B_name} 勝）",
-                  yaxis_title="機率（%）", height=320, margin=dict(t=50, b=20),
-                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    text=[f'{results.get(k,0)/100:.1f}%' for k in order],textposition="outside",cliponaxis=False,
+    hovertemplate="比數 %{x}：%{y:.1f}%<extra></extra>"))
+fig.update_layout(yaxis_title="機率（%）")
+ui.style_fig(fig, 320, f"系列賽結果分布（左邊 {A_name} 勝、右邊 {B_name} 勝）")
 fig.update_yaxes(range=[0, max(results.values()) / 100 * 1.25])   # 上方留空間，最高那根的數字才不會被切掉
 st.plotly_chart(fig, width="stretch")
+top = max(results, key=results.get)
+wins_a, wins_b = map(int, top.split("-"))
+top_team = A_name if wins_a > wins_b else B_name
+ui.insight(f"模型認為最可能的結果是 <b>{top_team} 以 {max(wins_a, wins_b)} 勝 {min(wins_a, wins_b)} 敗奪冠</b>"
+           f"（{results[top] / 100:.1f}%），打滿七場的機率是 {(results.get('4-3', 0) + results.get('3-4', 0)) / 100:.1f}%。")
+st.caption(f"依 2026 例行賽（{span}）得失分模擬 10,000 次｜已計入主場優勢 {config.HOME_ADVANTAGE:.1%}")
 with st.expander("這個機率怎麼來的？"):
     neutral = model.log5(A["pythag"], B["pythag"])
     st.markdown(f"""
@@ -97,26 +106,35 @@ st.markdown(f'<div class="card"><p class="eyebrow">這場比賽的勝率</p>'
             f'<span style="color:{B["color"]}">{1 - p_game:.0%} {B_name}</span></div>'
             f'<div class="kpi-label">預估得分 {r_a:.1f} : {r_b:.1f}</div></div>', unsafe_allow_html=True)
 metrics=[
-    ("打線 wOBA（對今日先發）",lineup_woba(lu_a,sp_b),lineup_woba(lu_b,sp_a),True),
+    ("打線攻擊力 wOBA（對今日先發）",lineup_woba(lu_a,sp_b),lineup_woba(lu_b,sp_a),True),
     ("打線三振率 %",lu_a['Kp'].mean(),lu_b['Kp'].mean(),False),
-    ("打線 ISO", lu_a["ISO_calc"].mean(), lu_b["ISO_calc"].mean(), True),
-    ("先發 FIP",sp_a['FIP_calc'],sp_b['FIP_calc'],False),
+    ("打線長打力 ISO", lu_a["ISO_calc"].mean(), lu_b["ISO_calc"].mean(), True),
+    ("先發自身表現 FIP",sp_a['FIP_calc'],sp_b['FIP_calc'],False),
     ("先發三振率 %",sp_a['Kp'],sp_b['Kp'],True),
-    ("牛棚 FIP",tp.loc[abbr_a,'bullpen_fip'],tp.loc[abbr_b,'bullpen_fip'],False),
+    ("牛棚自身表現 FIP",tp.loc[abbr_a,'bullpen_fip'],tp.loc[abbr_b,'bullpen_fip'],False),
     ("守備效率 DER",tp.loc[abbr_a,'DER'],tp.loc[abbr_b,'DER'],True),
 ]
 
 labels=[m[0] for m in metrics]
 share_a=[a/(a+b) if hi else b/(a+b) for _,a, b, hi in metrics ]
+show = lambda v: f"{v:.3f}" if v < 1 else f"{v:.2f}"
+both = [[show(m[1]), show(m[2])] for m in metrics]
+hover = f"%{{y}}<br>{A_name} %{{customdata[0]}} ／ {B_name} %{{customdata[1]}}<extra></extra>"
 fig = go.Figure()
 fig.add_bar(y=labels, x=[-s for s in share_a], orientation="h", name=A_name, marker_color=A["color"],
-            text=[f"{m[1]:.3f}" if m[1] < 1 else f"{m[1]:.2f}" for m in metrics], textposition="inside",insidetextfont=dict(color=ui.text_on(A["color"])))
+            text=[b[0] for b in both], textposition="inside",insidetextfont=dict(color=ui.text_on(A["color"])),
+            customdata=both, hovertemplate=hover)
 fig.add_bar(y=labels, x=[1 - s for s in share_a], orientation="h", name=B_name, marker_color=B["color"],
-            text=[f"{m[2]:.3f}" if m[2] < 1 else f"{m[2]:.2f}" for m in metrics], textposition="inside",insidetextfont=dict(color=ui.text_on(B["color"])))
-fig.update_layout(barmode="relative", title="戰力對比（長條越長代表這一項越佔優勢）", height=380,
-                  xaxis=dict(showticklabels=False, range=[-0.7, 0.7]), yaxis=dict(autorange="reversed"),
-                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", margin=dict(t=50))
+            text=[b[1] for b in both], textposition="inside",insidetextfont=dict(color=ui.text_on(B["color"])),
+            customdata=both, hovertemplate=hover)
+fig.update_layout(barmode="relative", xaxis=dict(showticklabels=False, range=[-0.7, 0.7]), yaxis=dict(autorange="reversed"))
+ui.style_fig(fig, 380, "戰力對比（長條越長代表這一項越佔優勢）")
 st.plotly_chart(fig, width="stretch")
+edge = max(range(len(share_a)), key=lambda i: abs(share_a[i] - 0.5))
+ui.insight(f"以目前選的先發和打線來看，{A_name} 佔優 <b>{sum(s > 0.5 for s in share_a)}</b> 項、"
+           f"{B_name} 佔優 <b>{sum(s < 0.5 for s in share_a)}</b> 項；"
+           f"差距最大的是<b>{labels[edge]}</b>，由 {A_name if share_a[edge] > 0.5 else B_name} 領先。")
+st.caption(f"2026 例行賽（{span}）｜打線是目前選的 9 人平均，牛棚和守備是全隊數據")
   
 st.header("弱點分析與應對策略")
 stab = load_rule_stability()
